@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: System Classification
+      Parameters:
+      - pSystem
+      - pApp
+    - Label:
+        default: System Environment
+      Parameters:
+      - pEnvPurpose
+    - Label:
+        default: Local Network Configuration
+      Parameters:
+      - pVpcCidr
+    ParameterLabels:
+      pSystem:
+        default: System Identifier
+      pApp:
+        default: Application Identifier
+      pEnvPurpose:
+        default: Environment Purpose
+      pVpcCidr:
+        default: VPC CIDR Block
+
+Parameters:
+  pSystem:
+    Type: String
+    Description: Used to qualify resource names
+    Default: infra
+  pApp:
+    Type: String
+    Description: Used to qualify resource names
+    Default: vpngw
+  pEnvPurpose:
+    Type: String
+    Description: Used to qualify resource names. 10 characters max.
+    AllowedPattern: '^[a-zA-Z0-9-_]{1,10}$'
+    Default: test
+  pVpcCidr:
+    Description: VPC CIDR Block
+    Type: String
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+
+Resources:
+  rPublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: { 'Fn::ImportValue': !Sub '${pSystem}-${pApp}-pVpcId' }
+      CidrBlock: !Select [0, !Cidr [!Ref pVpcCidr, 1, 8]]
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${pSystem}-${pApp}-subnet-${pEnvPurpose}'
+
+Outputs:
+  oPublicSubnet:
+    Value: !Ref rPublicSubnet
+    Export:
+      Name: !Sub '${pSystem}-${pApp}-${pEnvPurpose}-pSubnetId'

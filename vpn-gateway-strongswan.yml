@@ -920,12 +920,22 @@ Resources:
           Fn::GetAtt:
             [ rLaunchTemplate, LatestVersionNumber ]
       NetworkInterfaces:
-        - DeviceIndex: '0'
-          SubnetId: !Ref pSubnetId
+        - NetworkInterfaceId:
+           Ref: rVpnGatewayEni
+          DeviceIndex: '0'
       SourceDestCheck: false
       Tags:
         - Key: Name
           Value: !Sub '${pSystem}-${pApp}-${pEnvPurpose}'
+
+  rVpnGatewayEni:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SourceDestCheck: false
+      SubnetId: !Ref pSubnetId
+      Tags:
+        - Key: Name
+          Value: !Sub '${pSystem}-${pApp}-eni-${pEnvPurpose}'
 
   rVpnGatewayWaitHandle: 
    Type: AWS::CloudFormation::WaitConditionHandle
@@ -1018,3 +1028,9 @@ Resources:
     Properties:
       LogGroupName: !Sub '/${pSystem}/${pApp}/ec2/${pEnvPurpose}'
       RetentionInDays: 30
+
+Outputs:
+  oVpnGatewayEni:
+    Value: !Ref rVpnGatewayEni
+    Export:
+      Name: !Sub '${pSystem}-${pApp}-${pEnvPurpose}-rEniId'
