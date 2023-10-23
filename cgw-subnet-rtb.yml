@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: System Classification
+      Parameters:
+      - pSystem
+      - pApp
+    - Label:
+        default: System Environment
+      Parameters:
+      - pEnvPurpose
+    - Label:
+        default: Local Network Configuration
+      Parameters:
+      - pIgwId
+    ParameterLabels:
+      pSystem:
+        default: System Identifier
+      pApp:
+        default: Application Identifier
+      pEnvPurpose:
+        default: Environment Purpose
+      pIgwId:
+        default: IGW ID
+
+Parameters:
+  pSystem:
+    Type: String
+    Description: Used to qualify resource names
+    Default: infra
+  pApp:
+    Type: String
+    Description: Used to qualify resource names
+    Default: vpngw
+  pEnvPurpose:
+    Type: String
+    Description: Used to qualify resource names. 10 characters max.
+    AllowedPattern: '^[a-zA-Z0-9-_]{1,10}$'
+    Default: test
+  pIgwId:
+    Description: IGW ID
+    Type: String
+
+Resources:
+  rPublicSubnetRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: { 'Fn::ImportValue': !Sub '${pSystem}-${pApp}-pVpcId' }
+      Tags:
+        - Key: Name
+          Value: !Sub '${pSystem}-${pApp}-rtb-${pEnvPurpose}'
+  rPublicSubnetRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref rPublicSubnetRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref pIgwId
+  rPublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: { 'Fn::ImportValue': !Sub '${pSystem}-${pApp}-${pEnvPurpose}-pSubnetId' }
+      RouteTableId: !Ref rPublicSubnetRouteTable
